@@ -1,11 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-export async function POST(req: NextRequest) {
-  const { query } = await req.json();
+const MAX_QUERY_LENGTH = 300;
 
-  if (!query?.trim()) {
+export async function POST(req: NextRequest) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const query = typeof body === "object" && body !== null ? (body as { query?: unknown }).query : undefined;
+
+  if (typeof query !== "string" || !query.trim()) {
     return NextResponse.json({ error: "Query is required" }, { status: 400 });
+  }
+  if (query.length > MAX_QUERY_LENGTH) {
+    return NextResponse.json({ error: `Query must be ${MAX_QUERY_LENGTH} characters or fewer` }, { status: 400 });
+  }
+
+  if (!process.env.GROQ_API_KEY) {
+    console.error("GROQ_API_KEY is not set");
+    return NextResponse.json({ error: "AI assistant is not configured" }, { status: 500 });
   }
 
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -38,6 +55,6 @@ Keep the response conversational and grounded in the Kisii rental market. Typica
     return NextResponse.json({ reply });
   } catch (err) {
     console.error("Groq error:", err);
-    return NextResponse.json({ error: "AI assistant unavailable. Check your GROQ_API_KEY." }, { status: 500 });
+    return NextResponse.json({ error: "AI assistant is temporarily unavailable. Please try again shortly." }, { status: 502 });
   }
 }

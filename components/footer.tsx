@@ -65,8 +65,8 @@ export function Footer() {
               { label: "Landlord KYC", href: "/kyc" },
               { label: "List Your Property", href: "/register" },
               { label: "Admin Portal", href: "/admin" },
-              { label: "Privacy Policy", href: "/" },
-              { label: "Terms of Use", href: "/" },
+              { label: "Privacy Policy", href: "/privacy" },
+              { label: "Terms of Use", href: "/terms" },
             ].map(({ label, href }) => (
               <Link key={label} href={href} className="hover:text-white transition-colors">
                 {label}
