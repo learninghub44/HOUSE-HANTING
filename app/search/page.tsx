@@ -2,6 +2,7 @@ import { Bot, Grid3X3, ListFilter, Map, SlidersHorizontal } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { Navigation } from "@/components/nav";
 import { PropertyCard } from "@/components/property-card";
+import { Suspense } from "react";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ export default function SearchPage() {
       <main className="bg-surface">
         <section className="border-b border-slate-200 bg-white py-8">
           <div className="container-page">
-            <SearchBar compact />
+            <Suspense fallback={<div className="h-16 rounded-lg bg-white animate-pulse" />}><SearchBar compact /></Suspense>
           </div>
         </section>
         <section className="container-page grid gap-6 py-8 lg:grid-cols-[320px_1fr]">

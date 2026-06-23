@@ -18,6 +18,7 @@ body {
   margin: 0;
   background: #ffffff;
   color: #0f172a;
+  font-family: "DM Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 ::selection {

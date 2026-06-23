@@ -5,6 +5,7 @@ import { AreaCard } from "@/components/area-card";
 import { Footer } from "@/components/footer";
 import { Navigation } from "@/components/nav";
 import { PropertyCard } from "@/components/property-card";
+import { Suspense } from "react";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import { areas, properties } from "@/lib/data";
@@ -41,7 +42,7 @@ export default function HomePage() {
                 Search serious listings, compare verified landlords, and request viewings without wading through noisy classifieds.
               </p>
               <div className="mt-8">
-                <SearchBar />
+                <Suspense fallback={<div className="h-16 rounded-lg bg-white/10 animate-pulse" />}><SearchBar /></Suspense>
               </div>
               <div className="mt-6 flex flex-wrap gap-3 text-sm font-medium text-slate-600">
                 {["Kisii Town", "Nyanchwa", "Daraja Mbili", "Nyamataro"].map((area) => (
