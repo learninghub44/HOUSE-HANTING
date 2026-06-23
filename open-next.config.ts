@@ -11,6 +11,30 @@ const config: OpenNextConfig = {
       queue: "dummy",
     },
   },
+  functions: {
+    "api/ai-assistant": {
+      runtime: "edge",
+      override: {
+        wrapper: "cloudflare-edge",
+        converter: "edge",
+        proxyExternalRequest: "fetch",
+        incrementalCache: "dummy",
+        tagCache: "dummy",
+        queue: "dummy",
+      },
+    },
+    "api/generate-description": {
+      runtime: "edge",
+      override: {
+        wrapper: "cloudflare-edge",
+        converter: "edge",
+        proxyExternalRequest: "fetch",
+        incrementalCache: "dummy",
+        tagCache: "dummy",
+        queue: "dummy",
+      },
+    },
+  },
   edgeExternals: ["node:crypto"],
   middleware: {
     external: true,
