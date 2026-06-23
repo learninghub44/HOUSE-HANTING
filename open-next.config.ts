@@ -15,6 +15,7 @@ const config: OpenNextConfig = {
     "ai-assistant": {
       runtime: "edge",
       routes: ["app/api/ai-assistant/route"],
+      patterns: ["/api/ai-assistant"],
       override: {
         wrapper: "cloudflare-edge",
         converter: "edge",
@@ -27,6 +28,7 @@ const config: OpenNextConfig = {
     "generate-description": {
       runtime: "edge",
       routes: ["app/api/generate-description/route"],
+      patterns: ["/api/generate-description"],
       override: {
         wrapper: "cloudflare-edge",
         converter: "edge",
