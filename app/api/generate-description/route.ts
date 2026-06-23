@@ -2,16 +2,14 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
   const { type, location, amenities } = await req.json();
 
   if (!type || !location || !amenities) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
   try {
     const response = await groq.chat.completions.create({
