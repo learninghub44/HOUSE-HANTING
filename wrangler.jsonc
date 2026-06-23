@@ -3,11 +3,6 @@
   "name": "house-hunting",
   "compatibility_date": "2025-06-23",
   "compatibility_flags": ["nodejs_compat"],
-  "main": ".open-next/worker.js",
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS",
-    "run_worker_first": true
-  },
+  "pages_build_output_dir": ".open-next/assets",
   "placement": { "mode": "smart" }
 }

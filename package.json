@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build:cf": "opennextjs-cloudflare build",
+    "build:cf": "opennextjs-cloudflare build && node scripts/cf-postbuild.mjs",
     "preview": "opennextjs-cloudflare build && wrangler pages dev",
-    "deploy": "opennextjs-cloudflare build && wrangler deploy"
+    "deploy": "opennextjs-cloudflare build && node scripts/cf-postbuild.mjs && wrangler pages deploy .open-next/assets"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
