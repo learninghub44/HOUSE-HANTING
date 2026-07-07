@@ -193,6 +193,28 @@ export async function getAllProfiles() {
   return db.select().from(profiles).orderBy(desc(profiles.createdAt));
 }
 
+export async function getAllProfilesWithContact() {
+  const result = await db.execute<{
+    id: string;
+    role: "tenant" | "agent" | "landlord" | "admin";
+    name: string | null;
+    email: string | null;
+    created_at: string;
+  }>(sql`
+    select pr.id, pr.role, pr.created_at, u.name, u.email
+    from profiles pr
+    left join neon_auth.users_sync u on u.id = pr.id
+    order by pr.created_at desc
+  `);
+  return result.rows.map((row) => ({
+    id: row.id,
+    role: row.role,
+    name: row.name ?? "Unknown",
+    email: row.email ?? "—",
+    createdAt: new Date(row.created_at),
+  }));
+}
+
 // ---------- Verification (admin review of agents & landlord companies) ----------
 
 export async function getPendingVerifications() {
