@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { Building2, Mail, Phone, PlusCircle, ShieldAlert, User } from "lucide-react";
+import { Building2, Mail, Phone, ShieldAlert, User } from "lucide-react";
+import { BillingWidget } from "@/components/billing-widget";
+import { CreatePropertyForm } from "@/components/create-property-form";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { PropertyStatusBadge, VerificationBadge } from "@/components/badges";
-import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth/server";
 import { getPropertiesByAgent, getProfile } from "@/lib/queries";
 import { formatKes } from "@/lib/utils";
@@ -39,9 +40,6 @@ export default async function AgentDashboardPage() {
                 : "Listing properties on behalf of landlords in Kisii"}
             </p>
           </div>
-          <Button disabled={!isVerified} title={!isVerified ? "Your account must be verified before you can post listings" : undefined}>
-            <PlusCircle className="h-4 w-4" /> List a property
-          </Button>
         </div>
 
         {isPending && (
@@ -79,6 +77,17 @@ export default async function AgentDashboardPage() {
             <div className="mt-2"><VerificationBadge verified={isVerified} /></div>
           </div>
         </div>
+
+        {isVerified ? (
+          <>
+            <CreatePropertyForm creditsRemaining={profile.listingCredits} />
+            <BillingWidget creditsRemaining={profile.listingCredits} />
+          </>
+        ) : (
+          <div className="rounded-lg border border-dashed border-slate-300 bg-surface p-6 text-sm text-slate-500">
+            Listing creation and billing unlock once your account is verified.
+          </div>
+        )}
 
         <div id="properties" className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-card">
           <h2 className="text-xl font-semibold text-primary">Your listings</h2>

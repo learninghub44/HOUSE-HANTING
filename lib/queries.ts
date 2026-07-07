@@ -105,6 +105,24 @@ export async function createProperty(data: NewProperty) {
   return property;
 }
 
+export async function createPropertyConsumingCredit(data: NewProperty) {
+  return db.transaction(async (tx) => {
+    const [profile] = await tx.select().from(profiles).where(eq(profiles.id, data.landlordId));
+    if (!profile || profile.listingCredits < 1) {
+      return { ok: false as const, error: "insufficient_credits" as const };
+    }
+
+    const [property] = await tx.insert(properties).values(data).returning();
+
+    await tx
+      .update(profiles)
+      .set({ listingCredits: sql`${profiles.listingCredits} - 1` })
+      .where(eq(profiles.id, data.landlordId));
+
+    return { ok: true as const, property };
+  });
+}
+
 export async function updatePropertyStatus(id: string, status: "Available" | "Reserved" | "Occupied" | "Under Maintenance") {
   const [property] = await db
     .update(properties)

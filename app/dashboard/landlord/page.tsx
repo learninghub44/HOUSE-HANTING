@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
-import { BarChart3, Building2, CreditCard, FileCheck2, Mail, Phone, PlusCircle, ShieldAlert, TrendingUp, User } from "lucide-react";
+import { BarChart3, Building2, FileCheck2, Mail, Phone, ShieldAlert, TrendingUp, User } from "lucide-react";
 import { AiListingGenerator } from "@/components/ai-listing-generator";
+import { BillingWidget } from "@/components/billing-widget";
+import { CreatePropertyForm } from "@/components/create-property-form";
 import { PaymentStatusBadge, PropertyStatusBadge, VerificationBadge } from "@/components/badges";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationCenter } from "@/components/notification-center";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { auth } from "@/lib/auth/server";
-import { getProfile } from "@/lib/queries";
-import { payments, properties } from "@/lib/data";
+import { getInquiriesForLandlord, getPaymentsByUser, getProfile, getPropertiesByLandlord } from "@/lib/queries";
 import { formatKes } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +22,18 @@ export default async function LandlordDashboardPage() {
     redirect(profile.role === "agent" ? "/dashboard/agent" : profile.role === "admin" ? "/admin" : "/dashboard/tenant");
   }
 
+  const [listings, paymentHistory, inquiries] = await Promise.all([
+    getPropertiesByLandlord(session.user.id),
+    getPaymentsByUser(session.user.id),
+    getInquiriesForLandlord(session.user.id),
+  ]);
+
   const isCompany = profile.accountType === "company";
   const isVerified = profile.verificationStatus === "verified";
   const isPending = profile.verificationStatus === "pending";
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const inquiriesThisWeek = inquiries.filter((i) => i.createdAt >= weekAgo).length;
+  const verifiedCount = listings.filter((p) => p.verified).length;
 
   return (
     <DashboardShell title="Landlord Dashboard" nav={["Overview", "Properties", "Payments", "Profile", "Notifications"]}>
@@ -38,7 +46,6 @@ export default async function LandlordDashboardPage() {
             </h1>
             {isCompany && <div className="mt-2"><VerificationBadge verified={isVerified} /></div>}
           </div>
-          <Button><PlusCircle className="h-4 w-4" /> Create Property</Button>
         </div>
 
         {isCompany && isPending && (
@@ -50,12 +57,11 @@ export default async function LandlordDashboardPage() {
             </div>
           </div>
         )}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           {[
-            { Icon: Building2, label: "Active listings", value: "4" },
-            { Icon: FileCheck2, label: "Verified properties", value: "3" },
-            { Icon: TrendingUp, label: "Inquiries this week", value: "11" },
-            { Icon: CreditCard, label: "Plan", value: "Professional" },
+            { Icon: Building2, label: "Active listings", value: String(listings.length) },
+            { Icon: FileCheck2, label: "Verified properties", value: String(verifiedCount) },
+            { Icon: TrendingUp, label: "Inquiries this week", value: String(inquiriesThisWeek) },
           ].map(({ Icon, label, value }) => (
             <div key={label} className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
               <Icon className="h-5 w-5 text-accent" />
@@ -65,53 +71,67 @@ export default async function LandlordDashboardPage() {
           ))}
         </div>
         <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
-            <h2 className="text-xl font-semibold text-primary">Create Property</h2>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Input placeholder="Property title" />
-              <Input placeholder="Location" />
-              <Input placeholder="Monthly rent" />
-              <Input placeholder="Property type" />
-            </div>
-            <Button className="mt-4" type="button">Save draft</Button>
-            <p className="mt-2 text-xs text-slate-400">Saving connects to your account once the backend is live tomorrow.</p>
-          </div>
+          <CreatePropertyForm creditsRemaining={profile.listingCredits} />
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
             <h2 className="flex items-center gap-2 text-xl font-semibold text-primary"><BarChart3 className="h-5 w-5 text-accent" /> Analytics</h2>
-            <div className="mt-5 grid h-48 grid-cols-6 items-end gap-3">
-              {[55, 72, 48, 86, 64, 92].map((height, index) => <div key={index} className="rounded-t-md bg-accent/80" style={{ height: `${height}%` }} />)}
+            <p className="mt-1 text-sm text-slate-500">Inquiries received per listing</p>
+            <div className="mt-5 grid gap-3">
+              {listings.length === 0 ? (
+                <p className="text-sm text-slate-500">List a property to start seeing analytics.</p>
+              ) : (
+                listings.slice(0, 6).map((property) => {
+                  const count = inquiries.filter((i) => i.propertyTitle === property.title).length;
+                  return (
+                    <div key={property.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate text-slate-600">{property.title}</span>
+                      <span className="font-semibold text-primary">{count}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
+        <BillingWidget creditsRemaining={profile.listingCredits} />
         <AiListingGenerator />
         <div id="properties" className="scroll-mt-24 grid gap-6 xl:grid-cols-2">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
             <h2 className="text-xl font-semibold text-primary">Manage Properties</h2>
-            <div className="mt-4 grid gap-3">
-              {properties.slice(0, 4).map((property) => (
-                <div key={property.id} className="flex items-center justify-between gap-3 rounded-md bg-surface p-3">
-                  <div>
-                    <p className="font-medium text-primary">{property.title}</p>
-                    <p className="text-sm text-slate-600">{formatKes(property.rent)} - {property.location}</p>
+            {listings.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-500">You haven't listed any properties yet.</p>
+            ) : (
+              <div className="mt-4 grid gap-3">
+                {listings.map((property) => (
+                  <div key={property.id} className="flex items-center justify-between gap-3 rounded-md bg-surface p-3">
+                    <div>
+                      <p className="font-medium text-primary">{property.title}</p>
+                      <p className="text-sm text-slate-600">{formatKes(property.rent)} - {property.location}</p>
+                    </div>
+                    <PropertyStatusBadge status={property.status} />
                   </div>
-                  <PropertyStatusBadge status={property.status} />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
           <div id="payments" className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-card">
-            <h2 className="text-xl font-semibold text-primary">Subscription and Payments</h2>
-            <div className="mt-4 grid gap-3">
-              {payments.map((payment) => (
-                <div key={payment.item} className="flex items-center justify-between gap-3 rounded-md bg-surface p-3">
-                  <div>
-                    <p className="font-medium text-primary">{payment.item}</p>
-                    <p className="text-sm text-slate-600">{payment.date} - {formatKes(payment.amount)}</p>
+            <h2 className="text-xl font-semibold text-primary">Billing History</h2>
+            {paymentHistory.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-500">No payments yet.</p>
+            ) : (
+              <div className="mt-4 grid gap-3">
+                {paymentHistory.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between gap-3 rounded-md bg-surface p-3">
+                    <div>
+                      <p className="font-medium text-primary">{payment.item}</p>
+                      <p className="text-sm text-slate-600">
+                        {payment.createdAt.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })} - {formatKes(Number(payment.amount))}
+                      </p>
+                    </div>
+                    <PaymentStatusBadge status={payment.status} />
                   </div>
-                  <PaymentStatusBadge status={payment.status} />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div id="notifications" className="scroll-mt-24">
