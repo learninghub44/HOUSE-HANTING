@@ -8,15 +8,32 @@ import { boolean, integer, numeric, pgTable, text, timestamp, uuid } from "drizz
  */
 export const profiles = pgTable("profiles", {
   id: text("id").primaryKey(), // matches neon_auth.user.id
-  role: text("role", { enum: ["tenant", "landlord", "admin"] }).notNull().default("tenant"),
+  role: text("role", { enum: ["tenant", "agent", "landlord", "admin"] }).notNull().default("tenant"),
+  // Only meaningful for "agent" and "landlord" roles. An agent or landlord
+  // can operate as a lone individual or register as a company/agency.
+  accountType: text("account_type", { enum: ["individual", "company"] }),
+  companyName: text("company_name"),
+  companyRegistrationNo: text("company_registration_no"),
+  bio: text("bio"),
   phone: text("phone"),
   responseTime: text("response_time"),
+  // Agents and landlord companies must be verified by an admin before their
+  // listings show as "verified" on the site. Plain individual landlords
+  // default to verified since there is no company/agency claim to check.
+  verificationStatus: text("verification_status", {
+    enum: ["unverified", "pending", "verified", "rejected"],
+  })
+    .notNull()
+    .default("unverified"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const properties = pgTable("properties", {
   id: uuid("id").primaryKey().defaultRandom(),
   landlordId: text("landlord_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  // Set when an agent lists/manages this property on the landlord's behalf.
+  // Null means the landlord (or company) posted and manages it directly.
+  agentId: text("agent_id").references(() => profiles.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   location: text("location").notNull(),
   area: text("area").notNull(),

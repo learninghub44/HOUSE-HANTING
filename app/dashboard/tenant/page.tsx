@@ -1,11 +1,24 @@
+import { redirect } from "next/navigation";
 import { Mail, Phone, User } from "lucide-react";
 import { AiRecommendations } from "@/components/ai-recommendations";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationCenter } from "@/components/notification-center";
 import { PropertyCard } from "@/components/property-card";
+import { auth } from "@/lib/auth/server";
+import { getProfile } from "@/lib/queries";
 import { inquiries, properties } from "@/lib/data";
 
-export default function TenantDashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TenantDashboardPage() {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect("/login");
+
+  const profile = await getProfile(session.user.id);
+  if (profile && profile.role !== "tenant") {
+    redirect(profile.role === "agent" ? "/dashboard/agent" : profile.role === "admin" ? "/admin" : "/dashboard/landlord");
+  }
+
   return (
     <DashboardShell title="Tenant Dashboard" nav={["Saved", "Inquiries", "Profile", "Notifications"]}>
       <div className="grid gap-6">
@@ -39,16 +52,17 @@ export default function TenantDashboardPage() {
           </h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-              <User className="h-4 w-4 text-accent" /> Jane Moraa
+              <User className="h-4 w-4 text-accent" /> {session.user.name}
             </p>
             <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-              <Mail className="h-4 w-4 text-accent" /> jane.moraa@example.com
+              <Mail className="h-4 w-4 text-accent" /> {session.user.email}
             </p>
-            <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-              <Phone className="h-4 w-4 text-accent" /> +254 711 000 000
-            </p>
+            {profile?.phone && (
+              <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
+                <Phone className="h-4 w-4 text-accent" /> {profile.phone}
+              </p>
+            )}
           </div>
-          <p className="mt-4 text-xs text-slate-400">Profile editing connects to your account once sign-in is live.</p>
         </div>
       </div>
     </DashboardShell>

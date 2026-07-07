@@ -17,12 +17,17 @@ export async function getPropertiesByLandlord(landlordId: string) {
   return db.select().from(properties).where(eq(properties.landlordId, landlordId)).orderBy(desc(properties.createdAt));
 }
 
+export async function getPropertiesByAgent(agentId: string) {
+  return db.select().from(properties).where(eq(properties.agentId, agentId)).orderBy(desc(properties.createdAt));
+}
+
 export async function getPropertiesByArea(area: string) {
   return db.select().from(properties).where(eq(properties.area, area));
 }
 
 export type NewProperty = {
   landlordId: string;
+  agentId?: string;
   title: string;
   location: string;
   area: string;
@@ -72,18 +77,46 @@ export async function getProfile(userId: string) {
 
 export type NewProfile = {
   id: string; // Neon Auth user id
-  role: "tenant" | "landlord" | "admin";
+  role: "tenant" | "agent" | "landlord" | "admin";
+  accountType?: "individual" | "company";
+  companyName?: string;
+  companyRegistrationNo?: string;
+  bio?: string;
   phone?: string;
   responseTime?: string;
 };
 
 export async function createProfile(data: NewProfile) {
-  const [profile] = await db.insert(profiles).values(data).onConflictDoNothing({ target: profiles.id }).returning();
+  // Agents and landlord companies start out "pending" so an admin can vet
+  // them before their listings show as verified. Everyone else (tenants,
+  // individual landlords) has nothing to vet, so they're just "unverified"
+  // by default (harmless — it only matters for the company/agent badge).
+  const verificationStatus =
+    (data.role === "agent" || (data.role === "landlord" && data.accountType === "company"))
+      ? "pending"
+      : "unverified";
+
+  const [profile] = await db
+    .insert(profiles)
+    .values({ ...data, verificationStatus })
+    .onConflictDoNothing({ target: profiles.id })
+    .returning();
   return profile;
 }
 
 export async function getAllProfiles() {
   return db.select().from(profiles).orderBy(desc(profiles.createdAt));
+}
+
+// ---------- Verification (admin review of agents & landlord companies) ----------
+
+export async function getPendingVerifications() {
+  return db.select().from(profiles).where(eq(profiles.verificationStatus, "pending")).orderBy(desc(profiles.createdAt));
+}
+
+export async function setVerificationStatus(userId: string, status: "verified" | "rejected" | "pending" | "unverified") {
+  const [profile] = await db.update(profiles).set({ verificationStatus: status }).where(eq(profiles.id, userId)).returning();
+  return profile;
 }
 
 // ---------- Inquiries ----------

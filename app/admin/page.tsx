@@ -1,9 +1,15 @@
-import { AlertTriangle, BarChart3, Building2, DollarSign, Mail, Settings, User, Users } from "lucide-react";
+import { redirect } from "next/navigation";
+import { AlertTriangle, BarChart3, Building2, DollarSign, Mail, Settings, ShieldCheck, User, Users } from "lucide-react";
 import { PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
 import { NotificationCenter } from "@/components/notification-center";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { VerificationQueue } from "@/components/verification-queue";
+import { auth } from "@/lib/auth/server";
+import { getPendingVerifications, getProfile } from "@/lib/queries";
 import { payments, properties } from "@/lib/data";
 import { formatKes } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 type ReportEntry = { subject: string; reason: string; status: "Open" | "Resolved" };
 
@@ -20,7 +26,17 @@ const users = [
   { name: "Peter Nyakundi", email: "peter.n@example.com", role: "Landlord" },
 ];
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect("/login");
+
+  const requester = await getProfile(session.user.id);
+  if (requester?.role !== "admin") {
+    redirect(requester?.role === "agent" ? "/dashboard/agent" : requester?.role === "landlord" ? "/dashboard/landlord" : "/dashboard/tenant");
+  }
+
+  const pendingVerifications = await getPendingVerifications();
+
   return (
     <DashboardShell title="Admin Dashboard" nav={["Overview", "Users", "Properties", "Payments", "Notifications", "Profile"]}>
       <div className="grid gap-6">
@@ -28,6 +44,22 @@ export default function AdminDashboardPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Admin</p>
           <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">Marketplace operations</h1>
         </div>
+
+        <section className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-card">
+          <h2 className="flex items-center gap-2 text-xl font-semibold text-primary">
+            <ShieldCheck className="h-5 w-5 text-accent" /> Agent & company verification queue
+          </h2>
+          <VerificationQueue
+            pending={pendingVerifications.map((p) => ({
+              id: p.id,
+              role: p.role,
+              accountType: p.accountType,
+              companyName: p.companyName,
+              phone: p.phone,
+              createdAt: p.createdAt,
+            }))}
+          />
+        </section>
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           {[
             { Icon: BarChart3, title: "Analytics", copy: "Live demand view" },

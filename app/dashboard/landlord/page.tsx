@@ -1,24 +1,55 @@
-import { BarChart3, Building2, CreditCard, FileCheck2, Mail, Phone, PlusCircle, TrendingUp, User } from "lucide-react";
+import { redirect } from "next/navigation";
+import { BarChart3, Building2, CreditCard, FileCheck2, Mail, Phone, PlusCircle, ShieldAlert, TrendingUp, User } from "lucide-react";
 import { AiListingGenerator } from "@/components/ai-listing-generator";
-import { PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
+import { PaymentStatusBadge, PropertyStatusBadge, VerificationBadge } from "@/components/badges";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationCenter } from "@/components/notification-center";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { auth } from "@/lib/auth/server";
+import { getProfile } from "@/lib/queries";
 import { payments, properties } from "@/lib/data";
 import { formatKes } from "@/lib/utils";
 
-export default function LandlordDashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function LandlordDashboardPage() {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect("/login");
+
+  const profile = await getProfile(session.user.id);
+  if (!profile) redirect("/login");
+  if (profile.role !== "landlord") {
+    redirect(profile.role === "agent" ? "/dashboard/agent" : profile.role === "admin" ? "/admin" : "/dashboard/tenant");
+  }
+
+  const isCompany = profile.accountType === "company";
+  const isVerified = profile.verificationStatus === "verified";
+  const isPending = profile.verificationStatus === "pending";
+
   return (
     <DashboardShell title="Landlord Dashboard" nav={["Overview", "Properties", "Payments", "Profile", "Notifications"]}>
       <div className="grid gap-6">
         <div id="overview" className="scroll-mt-24 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Overview</p>
-            <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">Manage your rental portfolio</h1>
+            <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">
+              {isCompany && profile.companyName ? profile.companyName : "Manage your rental portfolio"}
+            </h1>
+            {isCompany && <div className="mt-2"><VerificationBadge verified={isVerified} /></div>}
           </div>
           <Button><PlusCircle className="h-4 w-4" /> Create Property</Button>
         </div>
+
+        {isCompany && isPending && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-medium">Your company account is pending verification</p>
+              <p className="mt-1">Listings will show a verified badge once our team has reviewed your account.</p>
+            </div>
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-4">
           {[
             { Icon: Building2, label: "Active listings", value: "4" },
@@ -92,16 +123,17 @@ export default function LandlordDashboardPage() {
           </h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-              <User className="h-4 w-4 text-accent" /> Miriam Bosibori
+              <User className="h-4 w-4 text-accent" /> {session.user.name}
             </p>
             <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-              <Mail className="h-4 w-4 text-accent" /> miriam.b@example.com
+              <Mail className="h-4 w-4 text-accent" /> {session.user.email}
             </p>
-            <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-              <Phone className="h-4 w-4 text-accent" /> +254 711 284 910
-            </p>
+            {profile.phone && (
+              <p className="flex items-center gap-2 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
+                <Phone className="h-4 w-4 text-accent" /> {profile.phone}
+              </p>
+            )}
           </div>
-          <p className="mt-4 text-xs text-slate-400">Profile editing connects to your account once sign-in is live.</p>
         </div>
       </div>
     </DashboardShell>
