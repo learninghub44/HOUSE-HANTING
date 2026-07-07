@@ -15,6 +15,9 @@
     "preview": "opennextjs-cloudflare build && wrangler pages dev",
     "deploy": "opennextjs-cloudflare build && node scripts/cf-postbuild.mjs && wrangler pages deploy .open-next/assets"
   },
+  "overrides": {
+    "@dotenvx/dotenvx": "^2.1.5"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/auth": "^0.4.2-beta",
