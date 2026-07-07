@@ -1,19 +1,21 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Bath, BedDouble, MapPin, Ruler, ShieldCheck, Star } from "lucide-react";
+import { Bath, BedDouble, MapPin, Ruler, ShieldCheck } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { InquiryModal } from "@/components/inquiry-modal";
 import { Navigation } from "@/components/nav";
 import { PropertyCard } from "@/components/property-card";
 import { PropertyStatusBadge, VerificationBadge } from "@/components/badges";
-import { properties } from "@/lib/data";
+import { getAllProperties, getPropertyWithLandlord } from "@/lib/queries";
 import { formatKes } from "@/lib/utils";
+
+export const revalidate = 60;
 
 export default async function PropertyDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const property = properties.find((item) => item.id === id);
+  const [property, allProperties] = await Promise.all([getPropertyWithLandlord(id), getAllProperties()]);
   if (!property) notFound();
-  const similar = properties.filter((item) => item.id !== property.id).slice(0, 3);
+  const similar = allProperties.filter((item) => item.id !== property.id && item.area === property.area).slice(0, 3);
 
   return (
     <>
@@ -48,12 +50,11 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
           <div className="grid gap-8">
             <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
               <h2 className="text-xl font-semibold text-primary">Property Overview</h2>
-              <div className="mt-5 grid gap-4 sm:grid-cols-4">
+              <div className="mt-5 grid gap-4 sm:grid-cols-3">
                 {[
                   { Icon: BedDouble, label: `${property.bedrooms} bedrooms` },
                   { Icon: Bath, label: `${property.bathrooms} bathrooms` },
-                  { Icon: Ruler, label: property.size },
-                  { Icon: Star, label: `${property.landlord.rating} landlord rating` },
+                  { Icon: Ruler, label: property.size ?? "Size not listed" },
                 ].map(({ Icon, label }) => (
                   <div key={label} className="rounded-md bg-surface p-4 text-sm font-semibold text-slate-700">
                     <Icon className="mb-2 h-5 w-5 text-accent" /> {label}

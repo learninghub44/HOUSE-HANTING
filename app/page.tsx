@@ -8,11 +8,16 @@ import { PropertyCard } from "@/components/property-card";
 import { Suspense } from "react";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
-import { areas, properties } from "@/lib/data";
+import { AREA_INFO } from "@/lib/area-info";
+import { getAllProperties, getAreaCounts } from "@/lib/queries";
 
-export default function HomePage() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const [properties, areaCounts] = await Promise.all([getAllProperties(), getAreaCounts()]);
   const featured = properties.slice(0, 3);
-  const latest = properties.slice(3);
+  const latest = properties.slice(3, 6);
+  const areas = AREA_INFO.map((info) => ({ ...info, count: areaCounts.get(info.name) ?? 0 }));
 
   return (
     <>

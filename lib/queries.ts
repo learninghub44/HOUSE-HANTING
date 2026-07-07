@@ -13,6 +13,64 @@ export async function getPropertyById(id: string) {
   return property ?? null;
 }
 
+/**
+ * Property plus the landlord's public contact info. Identity (name, email)
+ * lives in Neon Auth's managed `neon_auth.users_sync` table, which Neon
+ * keeps in sync with the auth provider automatically — we only read from it.
+ */
+export async function getPropertyWithLandlord(id: string) {
+  const result = await db.execute<{
+    id: string;
+    landlord_id: string;
+    agent_id: string | null;
+    title: string;
+    location: string;
+    area: string;
+    type: string;
+    rent: number;
+    bedrooms: number;
+    bathrooms: number;
+    size: string | null;
+    status: "Available" | "Reserved" | "Occupied" | "Under Maintenance";
+    verified: boolean;
+    available: boolean;
+    image: string;
+    gallery: string[];
+    amenities: string[];
+    description: string;
+    created_at: string;
+    landlord_name: string | null;
+    landlord_phone: string | null;
+    landlord_response_time: string | null;
+  }>(sql`
+    select
+      p.*,
+      u.name as landlord_name,
+      pr.phone as landlord_phone,
+      pr.response_time as landlord_response_time
+    from properties p
+    inner join profiles pr on pr.id = p.landlord_id
+    left join neon_auth.users_sync u on u.id = p.landlord_id
+    where p.id = ${id}
+    limit 1
+  `);
+  const row = result.rows[0];
+  if (!row) return null;
+
+  const { landlord_name, landlord_phone, landlord_response_time, landlord_id, agent_id, created_at, ...rest } = row;
+  return {
+    ...rest,
+    landlordId: landlord_id,
+    agentId: agent_id,
+    createdAt: new Date(created_at),
+    landlord: {
+      name: landlord_name ?? "Landlord",
+      phone: landlord_phone ?? "Not provided",
+      responseTime: landlord_response_time ?? "Response time varies",
+    },
+  };
+}
+
 export async function getPropertiesByLandlord(landlordId: string) {
   return db.select().from(properties).where(eq(properties.landlordId, landlordId)).orderBy(desc(properties.createdAt));
 }

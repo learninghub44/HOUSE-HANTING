@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
-import { properties } from "@/lib/data";
+import { getAllProperties } from "@/lib/queries";
 import { siteConfig } from "@/lib/site-config";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = ["", "/search", "/login", "/register", "/privacy", "/terms"].map((path) => ({
     url: `${siteConfig.url}${path}`,
     lastModified: new Date(),
@@ -10,9 +10,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === "" ? 1 : 0.7,
   }));
 
+  const properties = await getAllProperties();
   const propertyRoutes = properties.map((property) => ({
     url: `${siteConfig.url}/property/${property.id}`,
-    lastModified: new Date(),
+    lastModified: property.createdAt,
     changeFrequency: "daily" as const,
     priority: 0.8,
   }));

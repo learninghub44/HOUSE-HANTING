@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Clock3, ShieldCheck, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { PaymentStatus, PropertyStatus } from "@/lib/data";
+import type { PaymentStatus, PropertyStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const statusStyles: Record<PropertyStatus, string> = {
@@ -36,6 +36,7 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
     Paid: "border-emerald-200 bg-emerald-50 text-emerald-700",
     Pending: "border-amber-200 bg-amber-50 text-amber-700",
     Overdue: "border-rose-200 bg-rose-50 text-rose-700",
+    Failed: "border-rose-200 bg-rose-50 text-rose-700",
   };
   return <Badge className={styles[status]}>{status}</Badge>;
 }
