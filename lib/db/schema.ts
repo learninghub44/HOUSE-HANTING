@@ -17,6 +17,9 @@ export const profiles = pgTable("profiles", {
   bio: text("bio"),
   phone: text("phone"),
   responseTime: text("response_time"),
+  // Listing credits purchased via Paystack. Each new property listing
+  // consumes one credit; landlords/agents top up through /dashboard billing.
+  listingCredits: integer("listing_credits").notNull().default(0),
   // Agents and landlord companies must be verified by an admin before their
   // listings show as "verified" on the site. Plain individual landlords
   // default to verified since there is no company/agency claim to check.
@@ -66,7 +69,11 @@ export const payments = pgTable("payments", {
   userId: text("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   item: text("item").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
-  status: text("status", { enum: ["Paid", "Pending", "Overdue"] }).notNull().default("Pending"),
+  status: text("status", { enum: ["Paid", "Pending", "Overdue", "Failed"] }).notNull().default("Pending"),
+  // Listing package purchase details (null for non-billing payment rows).
+  packageId: text("package_id"),
+  credits: integer("credits").notNull().default(0),
+  paystackReference: text("paystack_reference").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

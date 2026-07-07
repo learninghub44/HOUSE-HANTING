@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { inquiries, payments, profiles, properties, reports } from "./db/schema";
 
@@ -157,7 +157,7 @@ export async function getInquiriesForLandlord(landlordId: string) {
     .orderBy(desc(inquiries.createdAt));
 }
 
-// ---------- Payments ----------
+// ---------- Payments / billing ----------
 
 export async function getPaymentsByUser(userId: string) {
   return db.select().from(payments).where(eq(payments.userId, userId)).orderBy(desc(payments.createdAt));
@@ -165,6 +165,76 @@ export async function getPaymentsByUser(userId: string) {
 
 export async function getAllPayments() {
   return db.select().from(payments).orderBy(desc(payments.createdAt));
+}
+
+export async function getPaymentByReference(reference: string) {
+  const [payment] = await db.select().from(payments).where(eq(payments.paystackReference, reference));
+  return payment ?? null;
+}
+
+export type NewPendingPayment = {
+  userId: string;
+  item: string;
+  amount: number;
+  packageId: string;
+  credits: number;
+  paystackReference: string;
+};
+
+export async function createPendingPayment(data: NewPendingPayment) {
+  const [payment] = await db
+    .insert(payments)
+    .values({ ...data, amount: data.amount.toString(), status: "Pending" })
+    .returning();
+  return payment;
+}
+
+/**
+ * Marks a pending payment as paid and credits the buyer's listing balance,
+ * in one transaction so a webhook retry can never double-credit.
+ */
+export async function markPaymentPaidAndGrantCredits(reference: string) {
+  return db.transaction(async (tx) => {
+    const [payment] = await tx.select().from(payments).where(eq(payments.paystackReference, reference));
+    if (!payment) return null;
+    if (payment.status === "Paid") return payment; // already processed, idempotent no-op
+
+    const [updated] = await tx
+      .update(payments)
+      .set({ status: "Paid" })
+      .where(eq(payments.id, payment.id))
+      .returning();
+
+    await tx
+      .update(profiles)
+      .set({ listingCredits: sql`${profiles.listingCredits} + ${payment.credits}` })
+      .where(eq(profiles.id, payment.userId));
+
+    return updated;
+  });
+}
+
+export async function markPaymentFailed(reference: string) {
+  const [payment] = await db
+    .update(payments)
+    .set({ status: "Failed" })
+    .where(eq(payments.paystackReference, reference))
+    .returning();
+  return payment;
+}
+
+export async function consumeListingCredit(landlordId: string) {
+  return db.transaction(async (tx) => {
+    const [profile] = await tx.select().from(profiles).where(eq(profiles.id, landlordId));
+    if (!profile || profile.listingCredits < 1) return false;
+
+    await tx
+      .update(profiles)
+      .set({ listingCredits: sql`${profiles.listingCredits} - 1` })
+      .where(eq(profiles.id, landlordId));
+
+    return true;
+  });
 }
 
 // ---------- Reports (admin moderation) ----------
