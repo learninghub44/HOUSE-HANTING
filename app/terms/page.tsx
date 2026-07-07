@@ -29,8 +29,8 @@ export default function TermsPage() {
               <div>
                 <h2 className="text-lg font-semibold text-primary">2. Accounts and roles</h2>
                 <p className="mt-2 leading-7">
-                  House Hunt Kisii supports tenant, landlord, and admin accounts. Landlords must complete KYC
-                  verification before publishing property listings. You are responsible for keeping your
+                  House Hunt Kisii supports tenant, landlord, and admin accounts. Landlord accounts are subject
+                  to review before listings are published. You are responsible for keeping your
                   account credentials secure and for the accuracy of information you provide.
                 </p>
               </div>

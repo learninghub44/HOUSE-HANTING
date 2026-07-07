@@ -1,6 +1,6 @@
 import { BarChart3, Building2, CreditCard, FileCheck2, Mail, Phone, PlusCircle, TrendingUp, User } from "lucide-react";
 import { AiListingGenerator } from "@/components/ai-listing-generator";
-import { KycStatusBadge, PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
+import { PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationCenter } from "@/components/notification-center";
 import { Button } from "@/components/ui/button";
@@ -69,8 +69,7 @@ export default function LandlordDashboardPage() {
             </div>
           </div>
           <div id="payments" className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-card">
-            <h2 className="text-xl font-semibold text-primary">Subscription, Payments, and KYC</h2>
-            <div className="mt-4"><KycStatusBadge status="Pending" /></div>
+            <h2 className="text-xl font-semibold text-primary">Subscription and Payments</h2>
             <div className="mt-4 grid gap-3">
               {payments.map((payment) => (
                 <div key={payment.item} className="flex items-center justify-between gap-3 rounded-md bg-surface p-3">

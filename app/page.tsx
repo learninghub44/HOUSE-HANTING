@@ -95,10 +95,10 @@ export default function HomePage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                { Icon: ShieldCheck, title: "Verified landlord signals", copy: "KYC badges, property statuses, and cleaner inquiry paths help tenants understand who they are speaking to." },
+                { Icon: ShieldCheck, title: "Verified landlord signals", copy: "Verification badges, property statuses, and cleaner inquiry paths help tenants understand who they are speaking to." },
                 { Icon: Home, title: "Property-first discovery", copy: "Large imagery, full amenities, and area context keep attention on the home, not random listing noise." },
                 { Icon: Bot, title: "AI-assisted search", copy: "Natural language search helps tenants describe budget, location, family needs, and amenities in plain language." },
-                { Icon: CheckCircle2, title: "Operational dashboards", copy: "Landlords and admins get focused management surfaces for KYC, listings, payments, and reviews." },
+                { Icon: CheckCircle2, title: "Operational dashboards", copy: "Landlords and admins get focused management surfaces for listings, payments, and reviews." },
               ].map(({ Icon, title, copy }) => (
                 <div key={title} className="rounded-lg border border-slate-200 bg-white p-6">
                   <Icon className="h-6 w-6 text-accent" />

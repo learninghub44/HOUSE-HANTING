@@ -1,12 +1,10 @@
 export type PropertyStatus = "Available" | "Reserved" | "Occupied" | "Under Maintenance";
-export type KycStatus = "Approved" | "Pending" | "Rejected" | "Not Started";
 export type PaymentStatus = "Paid" | "Pending" | "Overdue";
 
 export type Landlord = {
   name: string;
   phone: string;
   rating: number;
-  kycStatus: KycStatus;
   responseTime: string;
 };
 
@@ -64,7 +62,7 @@ export const properties: Property[] = [
     image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80",
     gallery,
     amenities: ["Private parking", "Water storage", "Gated compound", "Tiled floors", "Kitchen cabinets"],
-    landlord: { name: "Miriam Bosibori", phone: "+254 711 284 910", rating: 4.8, kycStatus: "Approved", responseTime: "Usually replies within 2 hours" },
+    landlord: { name: "Miriam Bosibori", phone: "+254 711 284 910", rating: 4.8, responseTime: "Usually replies within 2 hours" },
     description: "A well-kept family maisonette in a quiet Nyanchwa pocket with reliable water storage, a secure gate, and quick access to Kisii School, town services, and local shops.",
   },
   {
@@ -83,7 +81,7 @@ export const properties: Property[] = [
     image: "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80",
     gallery,
     amenities: ["Token electricity", "Borehole water", "Secure entry", "Close to matatu stage"],
-    landlord: { name: "Peter Nyakundi", phone: "+254 724 601 332", rating: 4.6, kycStatus: "Approved", responseTime: "Usually replies same day" },
+    landlord: { name: "Peter Nyakundi", phone: "+254 724 601 332", rating: 4.6, responseTime: "Usually replies same day" },
     description: "A clean, practical bedsitter for students or working tenants who need fast access to Daraja Mbili, Kisii University routes, and daily amenities.",
   },
   {
@@ -102,7 +100,7 @@ export const properties: Property[] = [
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
     gallery,
     amenities: ["Lift access", "Backup water", "Balcony", "Fiber-ready", "Resident caretaker"],
-    landlord: { name: "James Mogaka", phone: "+254 733 842 194", rating: 4.7, kycStatus: "Approved", responseTime: "Usually replies within 4 hours" },
+    landlord: { name: "James Mogaka", phone: "+254 733 842 194", rating: 4.7, responseTime: "Usually replies within 4 hours" },
     description: "A polished apartment close to town offices, hospitals, supermarkets, and restaurants, with a balcony and a resident caretaker for smooth day-to-day living.",
   },
   {
@@ -121,7 +119,7 @@ export const properties: Property[] = [
     image: "https://images.unsplash.com/photo-1600047509358-9dc75507daeb?auto=format&fit=crop&w=1200&q=80",
     gallery,
     amenities: ["Large compound", "Servant quarter", "Kitchen garden", "Water tank", "Perimeter fence"],
-    landlord: { name: "Grace Moraa", phone: "+254 700 118 509", rating: 4.4, kycStatus: "Pending", responseTime: "Usually replies within 1 day" },
+    landlord: { name: "Grace Moraa", phone: "+254 700 118 509", rating: 4.4, responseTime: "Usually replies within 1 day" },
     description: "A spacious family bungalow with room for outdoor living, currently receiving maintenance before the next tenant moves in.",
   },
   {
@@ -140,7 +138,7 @@ export const properties: Property[] = [
     image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
     gallery,
     amenities: ["Hot shower", "Cabinet kitchen", "Secure parking", "Caretaker", "Prepaid power"],
-    landlord: { name: "Dennis Ombati", phone: "+254 716 930 442", rating: 4.9, kycStatus: "Approved", responseTime: "Usually replies within 1 hour" },
+    landlord: { name: "Dennis Ombati", phone: "+254 716 930 442", rating: 4.9, responseTime: "Usually replies within 1 hour" },
     description: "A modern one-bedroom apartment with clean finishes, secure parking, and quick access to Kisii town through Nyamataro road.",
   },
   {
@@ -159,7 +157,7 @@ export const properties: Property[] = [
     image: "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1200&q=80",
     gallery,
     amenities: ["Paved access", "Water tank", "Shared parking", "Close to school"],
-    landlord: { name: "Samuel Onchari", phone: "+254 722 408 771", rating: 4.5, kycStatus: "Approved", responseTime: "Usually replies within 6 hours" },
+    landlord: { name: "Samuel Onchari", phone: "+254 722 408 771", rating: 4.5, responseTime: "Usually replies within 6 hours" },
     description: "A practical townhouse in Keroka suited to small families who value access to schools, shopping, and transport links.",
   },
 ];
@@ -173,5 +171,5 @@ export const inquiries = [
 export const payments = [
   { item: "Professional landlord plan", date: "01 Jun 2026", amount: 2500, status: "Paid" as PaymentStatus },
   { item: "Listing boost: Nyanchwa maisonette", date: "22 May 2026", amount: 800, status: "Paid" as PaymentStatus },
-  { item: "KYC document review", date: "14 May 2026", amount: 0, status: "Pending" as PaymentStatus },
+  { item: "Listing boost: Nyamataro one-bedroom", date: "14 May 2026", amount: 500, status: "Pending" as PaymentStatus },
 ];

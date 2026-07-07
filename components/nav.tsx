@@ -81,7 +81,6 @@ export function Navigation() {
               { href: "/search", label: "Search Properties" },
               { href: "/dashboard/tenant", label: "Tenant Dashboard" },
               { href: "/dashboard/landlord", label: "Landlord Dashboard" },
-              { href: "/kyc", label: "KYC Verification" },
               { href: "/admin", label: "Admin" },
               { href: "/login", label: "Sign In" },
               { href: "/register", label: "Create Account" },

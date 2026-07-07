@@ -3,7 +3,7 @@ import { Bell, CheckCircle2 } from "lucide-react";
 export function NotificationCenter() {
   const notes = [
     "Viewing request received for Nyamataro one-bedroom.",
-    "KYC review moved to pending document check.",
+    "Listing approved and published in Kisii Town.",
     "Saved property price changed in Daraja Mbili.",
   ];
 

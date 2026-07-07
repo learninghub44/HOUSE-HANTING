@@ -1,20 +1,16 @@
-"use client";
-
-import { useState } from "react";
-import { AlertTriangle, BarChart3, Building2, CheckCircle2, DollarSign, FileCheck2, Mail, Settings, User, Users } from "lucide-react";
-import { KycStatusBadge, PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
+import { AlertTriangle, BarChart3, Building2, DollarSign, Mail, Settings, User, Users } from "lucide-react";
+import { PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
 import { NotificationCenter } from "@/components/notification-center";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { Button } from "@/components/ui/button";
 import { payments, properties } from "@/lib/data";
 import { formatKes } from "@/lib/utils";
 
-type KycEntry = { name: string; email: string; status: "Approved" | "Pending" | "Rejected" };
+type ReportEntry = { subject: string; reason: string; status: "Open" | "Resolved" };
 
-const initialKycQueue: KycEntry[] = [
-  { name: "Miriam Bosibori", email: "miriam.b@example.com", status: "Approved" },
-  { name: "Grace Moraa", email: "grace.moraa@example.com", status: "Pending" },
-  { name: "Dennis Ombati", email: "dennis.ombati@example.com", status: "Approved" },
+const reportsQueue: ReportEntry[] = [
+  { subject: "Nyanchwa maisonette listing", reason: "Photos didn't match description", status: "Open" },
+  { subject: "Message from a landlord", reason: "Suspicious payment request", status: "Open" },
+  { subject: "Daraja Mbili bedsitter listing", reason: "Duplicate posting", status: "Resolved" },
 ];
 
 const users = [
@@ -25,12 +21,6 @@ const users = [
 ];
 
 export default function AdminDashboardPage() {
-  const [kycQueue, setKycQueue] = useState(initialKycQueue);
-
-  function decide(name: string, status: "Approved" | "Rejected") {
-    setKycQueue((current) => current.map((entry) => (entry.name === name ? { ...entry, status } : entry)));
-  }
-
   return (
     <DashboardShell title="Admin Dashboard" nav={["Overview", "Users", "Properties", "Payments", "Notifications", "Profile"]}>
       <div className="grid gap-6">
@@ -43,7 +33,6 @@ export default function AdminDashboardPage() {
             { Icon: BarChart3, title: "Analytics", copy: "Live demand view" },
             { Icon: Users, title: "Users", copy: "Tenant and landlord accounts" },
             { Icon: Building2, title: "Properties", copy: "Listing moderation" },
-            { Icon: FileCheck2, title: "KYC Reviews", copy: "Document decisions" },
             { Icon: AlertTriangle, title: "Reports", copy: "Flagged conversations" },
             { Icon: DollarSign, title: "Revenue", copy: "Subscriptions and boosts" },
           ].map(({ Icon, title, copy }) => (
@@ -97,26 +86,20 @@ export default function AdminDashboardPage() {
             </div>
           </section>
           <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
-            <h2 className="text-xl font-semibold text-primary">KYC Reviews</h2>
+            <h2 className="text-xl font-semibold text-primary">Reports</h2>
             <div className="mt-4 grid gap-3">
-              {kycQueue.map((entry) => (
-                <div key={entry.name} className="rounded-md bg-surface p-4">
+              {reportsQueue.map((entry) => (
+                <div key={entry.subject} className="rounded-md bg-surface p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-primary">{entry.name}</p>
-                    <KycStatusBadge status={entry.status} />
+                    <p className="font-medium text-primary">{entry.subject}</p>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${entry.status === "Open" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+                      {entry.status}
+                    </span>
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <Button size="sm" type="button" onClick={() => decide(entry.name, "Approved")}>
-                      <CheckCircle2 className="h-4 w-4" /> Approve
-                    </Button>
-                    <Button size="sm" variant="outline" type="button" onClick={() => decide(entry.name, "Rejected")}>
-                      Request changes
-                    </Button>
-                  </div>
+                  <p className="mt-2 text-sm text-slate-600">{entry.reason}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-slate-400">Decisions update this view now; they will sync to Didit and notify users once the backend is connected.</p>
           </section>
         </div>
 
@@ -154,7 +137,7 @@ export default function AdminDashboardPage() {
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
           <h2 className="flex items-center gap-2 text-xl font-semibold text-primary"><Settings className="h-5 w-5 text-accent" /> Settings</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {["Require landlord KYC before publishing", "Enable AI assistant prompts", "Review reported listings before removal"].map((setting) => (
+            {["Require admin approval before publishing", "Enable AI assistant prompts", "Review reported listings before removal"].map((setting) => (
               <label key={setting} className="flex items-center justify-between gap-4 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
                 {setting}
                 <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-slate-300 text-accent" />

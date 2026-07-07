@@ -5,7 +5,7 @@ import { Footer } from "@/components/footer";
 import { InquiryModal } from "@/components/inquiry-modal";
 import { Navigation } from "@/components/nav";
 import { PropertyCard } from "@/components/property-card";
-import { KycStatusBadge, PropertyStatusBadge, VerificationBadge } from "@/components/badges";
+import { PropertyStatusBadge, VerificationBadge } from "@/components/badges";
 import { properties } from "@/lib/data";
 import { formatKes } from "@/lib/utils";
 
@@ -84,7 +84,7 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
             <div className="mt-4 rounded-md bg-surface p-4">
               <p className="font-semibold text-primary">{property.landlord.name}</p>
               <p className="mt-1 text-sm text-slate-600">{property.landlord.responseTime}</p>
-              <div className="mt-3"><KycStatusBadge status={property.landlord.kycStatus} /></div>
+              <div className="mt-3"><VerificationBadge verified={property.verified} /></div>
             </div>
             <div className="mt-5 grid gap-3">
               <p className="text-sm text-slate-600"><span className="font-semibold text-primary">Availability:</span> {property.available ? "Viewing slots open" : "Currently unavailable for move-in"}</p>

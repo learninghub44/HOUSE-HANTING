@@ -62,7 +62,6 @@ export function Footer() {
           <p className="font-semibold text-white">Company</p>
           <div className="mt-3 grid gap-2 text-sm text-slate-300">
             {[
-              { label: "Landlord KYC", href: "/kyc" },
               { label: "List Your Property", href: "/register" },
               { label: "Admin Portal", href: "/admin" },
               { label: "Privacy Policy", href: "/privacy" },
