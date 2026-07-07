@@ -1,14 +1,20 @@
 /**
- * Seeds the Neon database with initial landlord accounts and property
- * listings so the site has real content on first run.
+ * Seeds the database with initial landlord accounts (via Neon Auth) and
+ * property listings so the site has real content on first run.
  *
  * Usage: npm run db:seed
- * Requires DATABASE_URL to be set (see .env.example).
+ * Requires DATABASE_URL and NEON_AUTH_BASE_URL to be set (see .env.example).
  */
 import "dotenv/config";
 import { db } from "../lib/db/client";
-import { properties, users } from "../lib/db/schema";
-import { hashPassword } from "../lib/auth/password";
+import { profiles, properties } from "../lib/db/schema";
+
+const NEON_AUTH_BASE_URL = process.env.NEON_AUTH_BASE_URL;
+if (!NEON_AUTH_BASE_URL) {
+  throw new Error("NEON_AUTH_BASE_URL is not set. See .env.example.");
+}
+
+const DEFAULT_PASSWORD = "ChangeMe123!";
 
 const gallery = [
   "https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&w=1200&q=80",
@@ -17,9 +23,34 @@ const gallery = [
   "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80",
 ];
 
+type SignUpResult = { id: string } | null;
+
+async function signUpLandlord(name: string, email: string, phone: string, responseTime: string): Promise<SignUpResult> {
+  const response = await fetch(`${NEON_AUTH_BASE_URL}/auth/sign-up/email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password: DEFAULT_PASSWORD, name }),
+  });
+
+  if (!response.ok) {
+    // Most common case: account already exists from a previous seed run.
+    console.warn(`Skipping sign-up for ${email}: ${response.status} ${response.statusText}`);
+    return null;
+  }
+
+  const body = (await response.json()) as { user?: { id: string } };
+  if (!body.user) return null;
+
+  await db
+    .insert(profiles)
+    .values({ id: body.user.id, role: "landlord", phone, responseTime })
+    .onConflictDoNothing({ target: profiles.id });
+
+  return { id: body.user.id };
+}
+
 async function seed() {
-  console.log("Seeding landlords...");
-  const defaultPassword = await hashPassword("ChangeMe123!");
+  console.log("Seeding landlord accounts via Neon Auth...");
 
   const landlordSeeds = [
     { name: "Miriam Bosibori", email: "miriam.b@example.com", phone: "+254 711 284 910", responseTime: "Usually replies within 2 hours" },
@@ -30,34 +61,19 @@ async function seed() {
     { name: "Samuel Onchari", email: "samuel.o@example.com", phone: "+254 722 408 771", responseTime: "Usually replies within 6 hours" },
   ];
 
-  const insertedLandlords: Record<string, string> = {};
+  const landlordIdByName = new Map<string, string>();
   for (const seedData of landlordSeeds) {
-    const [landlord] = await db
-      .insert(users)
-      .values({
-        name: seedData.name,
-        email: seedData.email,
-        passwordHash: defaultPassword,
-        phone: seedData.phone,
-        role: "landlord",
-        responseTime: seedData.responseTime,
-      })
-      .onConflictDoNothing({ target: users.email })
-      .returning();
-    if (landlord) insertedLandlords[seedData.name] = landlord.id;
+    const result = await signUpLandlord(seedData.name, seedData.email, seedData.phone, seedData.responseTime);
+    if (result) landlordIdByName.set(seedData.name, result.id);
   }
-  console.log(`Seeded ${Object.keys(insertedLandlords).length} landlords.`);
+  console.log(`Created ${landlordIdByName.size} landlord accounts (password: ${DEFAULT_PASSWORD}).`);
 
-  console.log("Seeding an admin account...");
-  await db
-    .insert(users)
-    .values({
-      name: "Admin User",
-      email: "admin@househuntkisii.co.ke",
-      passwordHash: defaultPassword,
-      role: "admin",
-    })
-    .onConflictDoNothing({ target: users.email });
+  if (landlordIdByName.size === 0) {
+    console.warn(
+      "No landlord accounts were created — they may already exist. Re-run after clearing neon_auth.user if you want fresh seed data, or seed properties manually."
+    );
+    return;
+  }
 
   console.log("Seeding properties...");
   const propertySeeds = [
@@ -165,15 +181,11 @@ async function seed() {
     },
   ];
 
-  // Re-fetch landlord IDs in case some already existed (onConflictDoNothing skips insert)
-  const allLandlords = await db.select().from(users);
-  const landlordIdByName = new Map(allLandlords.map((u) => [u.name, u.id]));
-
   let insertedCount = 0;
   for (const seedData of propertySeeds) {
     const landlordId = landlordIdByName.get(seedData.landlordName);
     if (!landlordId) {
-      console.warn(`Skipping "${seedData.title}" — landlord "${seedData.landlordName}" not found.`);
+      console.warn(`Skipping "${seedData.title}" — no account id for landlord "${seedData.landlordName}" (likely already existed).`);
       continue;
     }
     const { landlordName: _landlordName, ...rest } = seedData;
@@ -181,7 +193,6 @@ async function seed() {
     insertedCount += 1;
   }
   console.log(`Seeded ${insertedCount} properties.`);
-  console.log("Done. Default password for all seeded accounts: ChangeMe123!");
 }
 
 seed()

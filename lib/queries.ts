@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "./db/client";
-import { inquiries, payments, properties, reports, users } from "./db/schema";
+import { inquiries, payments, profiles, properties, reports } from "./db/schema";
 
 // ---------- Properties ----------
 
@@ -60,36 +60,30 @@ export async function getAreaCounts() {
   return counts;
 }
 
-// ---------- Users ----------
+// ---------- Profiles ----------
+// Identity (name, email, password) lives in Neon Auth's `neon_auth` schema.
+// `profiles` only holds the app-specific fields (role, phone, response time),
+// keyed by the Neon Auth user id.
 
-export async function getUserByEmail(email: string) {
-  const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
-  return user ?? null;
+export async function getProfile(userId: string) {
+  const [profile] = await db.select().from(profiles).where(eq(profiles.id, userId));
+  return profile ?? null;
 }
 
-export async function getUserById(id: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, id));
-  return user ?? null;
-}
-
-export type NewUser = {
-  name: string;
-  email: string;
-  passwordHash: string;
-  phone?: string;
+export type NewProfile = {
+  id: string; // Neon Auth user id
   role: "tenant" | "landlord" | "admin";
+  phone?: string;
+  responseTime?: string;
 };
 
-export async function createUser(data: NewUser) {
-  const [user] = await db
-    .insert(users)
-    .values({ ...data, email: data.email.toLowerCase() })
-    .returning();
-  return user;
+export async function createProfile(data: NewProfile) {
+  const [profile] = await db.insert(profiles).values(data).onConflictDoNothing({ target: profiles.id }).returning();
+  return profile;
 }
 
-export async function getAllUsers() {
-  return db.select().from(users).orderBy(desc(users.createdAt));
+export async function getAllProfiles() {
+  return db.select().from(profiles).orderBy(desc(profiles.createdAt));
 }
 
 // ---------- Inquiries ----------
@@ -122,11 +116,10 @@ export async function getInquiriesForLandlord(landlordId: string) {
       status: inquiries.status,
       createdAt: inquiries.createdAt,
       propertyTitle: properties.title,
-      tenantName: users.name,
+      tenantId: inquiries.tenantId,
     })
     .from(inquiries)
     .innerJoin(properties, eq(inquiries.propertyId, properties.id))
-    .innerJoin(users, eq(inquiries.tenantId, users.id))
     .where(eq(properties.landlordId, landlordId))
     .orderBy(desc(inquiries.createdAt));
 }
