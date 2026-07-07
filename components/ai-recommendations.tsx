@@ -5,18 +5,13 @@ import { Loader2, Sparkles } from "lucide-react";
 import { PropertyCard } from "@/components/property-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { properties } from "@/lib/data";
+import type { Property } from "@/lib/types";
 
-export function AiRecommendations() {
+export function AiRecommendations({ recommended }: { recommended: Property[] }) {
   const [query, setQuery] = useState("");
   const [suggestion, setSuggestion] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
-
-  // Default recommended properties — filtered on budget and area
-  const recommended = properties
-    .filter((p) => p.rent <= 18000 || p.area === "Nyamataro")
-    .slice(0, 3);
 
   async function handleAsk(e: React.FormEvent) {
     e.preventDefault();

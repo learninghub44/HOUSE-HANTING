@@ -114,6 +114,15 @@ export async function updatePropertyStatus(id: string, status: "Available" | "Re
   return property;
 }
 
+export async function getRecommendedProperties(limit = 3) {
+  return db
+    .select()
+    .from(properties)
+    .where(eq(properties.status, "Available"))
+    .orderBy(desc(properties.createdAt))
+    .limit(limit);
+}
+
 export async function getAreaCounts() {
   const rows = await db.select({ area: properties.area }).from(properties);
   const counts = new Map<string, number>();
@@ -178,6 +187,16 @@ export async function setVerificationStatus(userId: string, status: "verified" |
 }
 
 // ---------- Inquiries ----------
+
+export async function getInquiriedPropertiesByTenant(tenantId: string) {
+  const rows = await db
+    .selectDistinctOn([properties.id], { property: properties })
+    .from(inquiries)
+    .innerJoin(properties, eq(inquiries.propertyId, properties.id))
+    .where(eq(inquiries.tenantId, tenantId))
+    .orderBy(properties.id, desc(inquiries.createdAt));
+  return rows.map((row) => row.property);
+}
 
 export async function createInquiry(propertyId: string, tenantId: string, message: string) {
   const [inquiry] = await db.insert(inquiries).values({ propertyId, tenantId, message }).returning();

@@ -5,8 +5,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationCenter } from "@/components/notification-center";
 import { PropertyCard } from "@/components/property-card";
 import { auth } from "@/lib/auth/server";
-import { getProfile } from "@/lib/queries";
-import { inquiries, properties } from "@/lib/data";
+import { getInquiriedPropertiesByTenant, getInquiriesByTenant, getProfile, getRecommendedProperties } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -19,27 +18,45 @@ export default async function TenantDashboardPage() {
     redirect(profile.role === "agent" ? "/dashboard/agent" : profile.role === "admin" ? "/admin" : "/dashboard/landlord");
   }
 
+  const [inquiredProperties, inquiries, recommended] = await Promise.all([
+    getInquiriedPropertiesByTenant(session.user.id),
+    getInquiriesByTenant(session.user.id),
+    getRecommendedProperties(3),
+  ]);
+
   return (
-    <DashboardShell title="Tenant Dashboard" nav={["Saved", "Inquiries", "Profile", "Notifications"]}>
+    <DashboardShell title="Tenant Dashboard" nav={["Inquiries", "Profile", "Notifications"]}>
       <div className="grid gap-6">
         <div id="saved" className="scroll-mt-24">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Saved Properties</p>
-          <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">Your shortlist</h1>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Properties You've Inquired About</p>
+          <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">Your activity</h1>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {properties.slice(0, 3).map((property) => <PropertyCard key={property.id} property={property} />)}
-        </div>
-        <AiRecommendations />
+        {inquiredProperties.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {inquiredProperties.map((property) => <PropertyCard key={property.id} property={property} />)}
+          </div>
+        ) : (
+          <p className="rounded-lg border border-dashed border-slate-200 bg-surface p-6 text-sm text-slate-500">
+            You haven't inquired about any properties yet. Browse listings to get started.
+          </p>
+        )}
+        <AiRecommendations recommended={recommended} />
         <div className="grid gap-6 lg:grid-cols-2">
           <div id="inquiries" className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-card">
             <h2 className="text-xl font-semibold text-primary">Inquiry History</h2>
             <div className="mt-4 grid gap-3">
-              {inquiries.map((item) => (
-                <div key={item.property} className="rounded-md bg-surface p-4">
-                  <p className="font-medium text-primary">{item.property}</p>
-                  <p className="mt-1 text-sm text-slate-600">{item.date} - {item.status}</p>
-                </div>
-              ))}
+              {inquiries.length > 0 ? (
+                inquiries.map((item) => (
+                  <div key={item.id} className="rounded-md bg-surface p-4">
+                    <p className="font-medium text-primary">{item.propertyTitle}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {item.createdAt.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })} - {item.status}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No inquiries yet.</p>
+              )}
             </div>
           </div>
           <div id="notifications" className="scroll-mt-24">
