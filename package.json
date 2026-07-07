@@ -16,7 +16,8 @@
     "deploy": "opennextjs-cloudflare build && node scripts/cf-postbuild.mjs && wrangler pages deploy .open-next/assets"
   },
   "overrides": {
-    "@dotenvx/dotenvx": "^2.1.5"
+    "@dotenvx/dotenvx": "^2.1.5",
+    "better-auth": "^1.6.23"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
