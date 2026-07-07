@@ -2,6 +2,12 @@ import type { MetadataRoute } from "next";
 import { getAllProperties } from "@/lib/queries";
 import { siteConfig } from "@/lib/site-config";
 
+// Cloudflare Pages only injects DATABASE_URL at runtime, not at build time
+// (same reason lib/db/client.ts lazily connects) — so this route must be
+// dynamic, not statically prerendered, or the build fails trying to reach
+// the DB before it's reachable.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = ["", "/search", "/login", "/register", "/privacy", "/terms"].map((path) => ({
     url: `${siteConfig.url}${path}`,

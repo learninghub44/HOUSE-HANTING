@@ -7,11 +7,11 @@ import { PropertyCard } from "@/components/property-card";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { areas, properties } from "@/lib/data";
+import type { Property } from "@/lib/types";
 
 const amenityOptions = ["Parking", "Water storage", "Fiber-ready", "Gated compound"];
 
-export function SearchPageContent() {
+export function SearchPageContent({ properties, areaNames }: { properties: Property[]; areaNames: string[] }) {
   const searchParams = useSearchParams();
 
   const [location, setLocation] = useState("All areas");
@@ -63,7 +63,7 @@ export function SearchPageContent() {
       // appliedAt forces re-evaluation when "Apply filters" is pressed on mobile-style flows
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location, propertyType, minBeds, minBaths, minPrice, maxPrice, amenities, verifiedOnly, availableOnly, appliedAt, searchParams]);
+  }, [properties, location, propertyType, minBeds, minBaths, minPrice, maxPrice, amenities, verifiedOnly, availableOnly, appliedAt, searchParams]);
 
   async function handleAskAi(e: React.FormEvent) {
     e.preventDefault();
@@ -109,7 +109,7 @@ export function SearchPageContent() {
                 className="h-11 rounded-md border border-slate-200 px-3 focus-ring"
               >
                 <option>All areas</option>
-                {areas.map((area) => <option key={area.name}>{area.name}</option>)}
+                {areaNames.map((name) => <option key={name}>{name}</option>)}
               </select>
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">

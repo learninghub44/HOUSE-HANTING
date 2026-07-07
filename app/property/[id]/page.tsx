@@ -9,7 +9,7 @@ import { PropertyStatusBadge, VerificationBadge } from "@/components/badges";
 import { getAllProperties, getPropertyWithLandlord } from "@/lib/queries";
 import { formatKes } from "@/lib/utils";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function PropertyDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

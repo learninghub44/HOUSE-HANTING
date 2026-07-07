@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AREA_INFO } from "@/lib/area-info";
 import { getAllProperties, getAreaCounts } from "@/lib/queries";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [properties, areaCounts] = await Promise.all([getAllProperties(), getAreaCounts()]);
