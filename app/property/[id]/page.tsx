@@ -2,19 +2,23 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Bath, BedDouble, MapPin, Ruler, ShieldCheck } from "lucide-react";
 import { Footer } from "@/components/footer";
+import { FavoriteButton } from "@/components/favorite-button";
 import { InquiryModal } from "@/components/inquiry-modal";
 import { Navigation } from "@/components/nav";
 import { PropertyCard } from "@/components/property-card";
 import { PropertyStatusBadge, VerificationBadge } from "@/components/badges";
-import { getAllProperties, getPropertyWithLandlord } from "@/lib/queries";
+import { auth } from "@/lib/auth/server";
+import { getAllProperties, getFavoritedPropertyIds, getProfile, getPropertyWithLandlord } from "@/lib/queries";
 import { formatKes } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function PropertyDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [property, allProperties] = await Promise.all([getPropertyWithLandlord(id), getAllProperties()]);
+  const [property, allProperties, session] = await Promise.all([getPropertyWithLandlord(id), getAllProperties(), auth.getSession()]);
   if (!property) notFound();
+  const profile = session.data?.user ? await getProfile(session.data.user.id) : null;
+  const favoritedIds = profile?.role === "tenant" ? await getFavoritedPropertyIds(profile.id) : null;
   const similar = allProperties.filter((item) => item.id !== property.id && item.area === property.area).slice(0, 3);
 
   return (
@@ -24,9 +28,12 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
         <section className="container-page py-8">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <PropertyStatusBadge status={property.status} />
                 <VerificationBadge verified={property.verified} />
+                {favoritedIds && (
+                  <FavoriteButton propertyId={property.id} initialFavorited={favoritedIds.has(property.id)} />
+                )}
               </div>
               <h1 className="max-w-3xl font-serif text-4xl font-semibold text-primary">{property.title}</h1>
               <p className="mt-2 flex items-center gap-2 text-slate-600"><MapPin className="h-4 w-4" /> {property.location}</p>
@@ -76,7 +83,13 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
             <div>
               <h2 className="mb-4 text-xl font-semibold text-primary">Similar Listings</h2>
               <div className="grid gap-6 md:grid-cols-3">
-                {similar.map((item) => <PropertyCard key={item.id} property={item} />)}
+                {similar.map((item) => (
+                  <PropertyCard
+                    key={item.id}
+                    property={item}
+                    isFavoritedInitial={favoritedIds ? favoritedIds.has(item.id) : undefined}
+                  />
+                ))}
               </div>
             </div>
           </div>

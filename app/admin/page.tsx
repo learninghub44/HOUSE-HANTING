@@ -3,9 +3,10 @@ import { AlertTriangle, BarChart3, Building2, DollarSign, Mail, Settings, Shield
 import { PaymentStatusBadge, PropertyStatusBadge } from "@/components/badges";
 import { NotificationCenter } from "@/components/notification-center";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { SettingsPanel } from "@/components/settings-panel";
 import { VerificationQueue } from "@/components/verification-queue";
 import { auth } from "@/lib/auth/server";
-import { getAllPayments, getAllProfilesWithContact, getAllProperties, getPendingVerifications, getProfile, getReports } from "@/lib/queries";
+import { getAllPayments, getAllProfilesWithContact, getAllProperties, getPendingVerifications, getProfile, getReports, getSettings } from "@/lib/queries";
 import { formatKes } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +20,13 @@ export default async function AdminDashboardPage() {
     redirect(requester?.role === "agent" ? "/dashboard/agent" : requester?.role === "landlord" ? "/dashboard/landlord" : "/dashboard/tenant");
   }
 
-  const [pendingVerifications, users, properties, paymentHistory, reportsQueue] = await Promise.all([
+  const [pendingVerifications, users, properties, paymentHistory, reportsQueue, settings] = await Promise.all([
     getPendingVerifications(),
     getAllProfilesWithContact(),
     getAllProperties(),
     getAllPayments(),
     getReports(),
+    getSettings(),
   ]);
 
   const stats = [
@@ -174,14 +176,8 @@ export default async function AdminDashboardPage() {
 
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-card">
           <h2 className="flex items-center gap-2 text-xl font-semibold text-primary"><Settings className="h-5 w-5 text-accent" /> Settings</h2>
-          <p className="mt-1 text-xs text-slate-400">Not yet wired to a settings table — toggles here are UI only for now.</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {["Require admin approval before publishing", "Enable AI assistant prompts", "Review reported listings before removal"].map((setting) => (
-              <label key={setting} className="flex items-center justify-between gap-4 rounded-md bg-surface p-3 text-sm font-medium text-slate-700">
-                {setting}
-                <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-slate-300 text-accent" />
-              </label>
-            ))}
+          <div className="mt-4">
+            <SettingsPanel initialSettings={settings} />
           </div>
         </section>
       </div>

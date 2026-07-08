@@ -5,7 +5,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationCenter } from "@/components/notification-center";
 import { PropertyCard } from "@/components/property-card";
 import { auth } from "@/lib/auth/server";
-import { getInquiriedPropertiesByTenant, getInquiriesByTenant, getProfile, getRecommendedProperties } from "@/lib/queries";
+import { getFavoritedPropertyIds, getFavoritesByTenant, getInquiriedPropertiesByTenant, getInquiriesByTenant, getProfile, getRecommendedProperties } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -18,22 +18,41 @@ export default async function TenantDashboardPage() {
     redirect(profile.role === "agent" ? "/dashboard/agent" : profile.role === "admin" ? "/admin" : "/dashboard/landlord");
   }
 
-  const [inquiredProperties, inquiries, recommended] = await Promise.all([
+  const [savedProperties, inquiredProperties, inquiries, recommended] = await Promise.all([
+    getFavoritesByTenant(session.user.id),
     getInquiriedPropertiesByTenant(session.user.id),
     getInquiriesByTenant(session.user.id),
     getRecommendedProperties(3),
   ]);
+  const savedIds = new Set(savedProperties.map((p) => p.id));
 
   return (
-    <DashboardShell title="Tenant Dashboard" nav={["Inquiries", "Profile", "Notifications"]}>
+    <DashboardShell title="Tenant Dashboard" nav={["Saved", "Inquiries", "Profile", "Notifications"]}>
       <div className="grid gap-6">
         <div id="saved" className="scroll-mt-24">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Saved Properties</p>
+          <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">Your shortlist</h1>
+        </div>
+        {savedProperties.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {savedProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} isFavoritedInitial />
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-lg border border-dashed border-slate-200 bg-surface p-6 text-sm text-slate-500">
+            You haven't saved any properties yet. Tap the heart on a listing to shortlist it.
+          </p>
+        )}
+
+        <div className="scroll-mt-24">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Properties You've Inquired About</p>
-          <h1 className="mt-2 font-serif text-4xl font-semibold text-primary">Your activity</h1>
         </div>
         {inquiredProperties.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {inquiredProperties.map((property) => <PropertyCard key={property.id} property={property} />)}
+            {inquiredProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} isFavoritedInitial={savedIds.has(property.id)} />
+            ))}
           </div>
         ) : (
           <p className="rounded-lg border border-dashed border-slate-200 bg-surface p-6 text-sm text-slate-500">

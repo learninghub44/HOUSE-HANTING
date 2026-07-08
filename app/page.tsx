@@ -9,12 +9,15 @@ import { Suspense } from "react";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import { AREA_INFO } from "@/lib/area-info";
-import { getAllProperties, getAreaCounts } from "@/lib/queries";
+import { auth } from "@/lib/auth/server";
+import { getAllProperties, getAreaCounts, getFavoritedPropertyIds, getProfile } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [properties, areaCounts] = await Promise.all([getAllProperties(), getAreaCounts()]);
+  const [properties, areaCounts, session] = await Promise.all([getAllProperties(), getAreaCounts(), auth.getSession()]);
+  const profile = session.data?.user ? await getProfile(session.data.user.id) : null;
+  const favoritedIds = profile?.role === "tenant" ? await getFavoritedPropertyIds(profile.id) : null;
   const featured = properties.slice(0, 3);
   const latest = properties.slice(3, 6);
   const areas = AREA_INFO.map((info) => ({ ...info, count: areaCounts.get(info.name) ?? 0 }));
@@ -73,7 +76,12 @@ export default async function HomePage() {
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               {featured.map((property, index) => (
-                <PropertyCard key={property.id} property={property} priority={index === 0} />
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  priority={index === 0}
+                  isFavoritedInitial={favoritedIds ? favoritedIds.has(property.id) : undefined}
+                />
               ))}
             </div>
           </div>
@@ -127,7 +135,13 @@ export default async function HomePage() {
               </Button>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
-              {latest.map((property) => <PropertyCard key={property.id} property={property} />)}
+              {latest.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  isFavoritedInitial={favoritedIds ? favoritedIds.has(property.id) : undefined}
+                />
+              ))}
             </div>
           </div>
         </section>

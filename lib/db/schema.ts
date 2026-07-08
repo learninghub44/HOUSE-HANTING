@@ -1,4 +1,4 @@
-import { boolean, integer, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Identity (email, password, sessions) is fully managed by Neon Auth in the
@@ -83,4 +83,22 @@ export const reports = pgTable("reports", {
   reason: text("reason").notNull(),
   status: text("status", { enum: ["Open", "Resolved"] }).notNull().default("Open"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const favorites = pgTable(
+  "favorites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: text("tenant_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+    propertyId: uuid("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("favorites_tenant_property_idx").on(table.tenantId, table.propertyId)],
+);
+
+// Single-row-per-key admin settings store, backing the toggles on /admin.
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: boolean("value").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

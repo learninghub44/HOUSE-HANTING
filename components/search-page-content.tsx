@@ -11,7 +11,16 @@ import type { Property } from "@/lib/types";
 
 const amenityOptions = ["Parking", "Water storage", "Fiber-ready", "Gated compound"];
 
-export function SearchPageContent({ properties, areaNames }: { properties: Property[]; areaNames: string[] }) {
+export function SearchPageContent({
+  properties,
+  areaNames,
+  favoritedIds,
+}: {
+  properties: Property[];
+  areaNames: string[];
+  favoritedIds: string[] | null;
+}) {
+  const favoritedSet = favoritedIds ? new Set(favoritedIds) : null;
   const searchParams = useSearchParams();
 
   const [location, setLocation] = useState("All areas");
@@ -235,7 +244,13 @@ export function SearchPageContent({ properties, areaNames }: { properties: Prope
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {results.map((property) => <PropertyCard key={property.id} property={property} />)}
+              {results.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  isFavoritedInitial={favoritedSet ? favoritedSet.has(property.id) : undefined}
+                />
+              ))}
             </div>
           )}
         </div>

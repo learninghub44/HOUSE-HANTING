@@ -1,6 +1,6 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "./db/client";
-import { inquiries, payments, profiles, properties, reports } from "./db/schema";
+import { favorites, inquiries, payments, profiles, properties, reports, settings } from "./db/schema";
 
 // ---------- Properties ----------
 
@@ -231,6 +231,35 @@ export async function getAllProfilesWithContact() {
   }));
 }
 
+// ---------- Admin settings ----------
+
+export const SETTINGS_KEYS = {
+  requireApproval: "require_admin_approval",
+  aiAssistantPrompts: "enable_ai_assistant_prompts",
+  reviewReportedListings: "review_reported_listings_before_removal",
+} as const;
+
+const SETTINGS_DEFAULTS: Record<string, boolean> = {
+  [SETTINGS_KEYS.requireApproval]: true,
+  [SETTINGS_KEYS.aiAssistantPrompts]: true,
+  [SETTINGS_KEYS.reviewReportedListings]: true,
+};
+
+export async function getSettings() {
+  const rows = await db.select().from(settings);
+  const map = new Map(rows.map((r) => [r.key, r.value]));
+  return Object.fromEntries(
+    Object.values(SETTINGS_KEYS).map((key) => [key, map.get(key) ?? SETTINGS_DEFAULTS[key]]),
+  ) as Record<string, boolean>;
+}
+
+export async function updateSetting(key: string, value: boolean) {
+  await db
+    .insert(settings)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
+}
+
 // ---------- Verification (admin review of agents & landlord companies) ----------
 
 export async function getPendingVerifications() {
@@ -243,6 +272,29 @@ export async function setVerificationStatus(userId: string, status: "verified" |
 }
 
 // ---------- Inquiries ----------
+
+export async function getFavoritesByTenant(tenantId: string) {
+  const rows = await db
+    .select({ property: properties })
+    .from(favorites)
+    .innerJoin(properties, eq(favorites.propertyId, properties.id))
+    .where(eq(favorites.tenantId, tenantId))
+    .orderBy(desc(favorites.createdAt));
+  return rows.map((row) => row.property);
+}
+
+export async function getFavoritedPropertyIds(tenantId: string) {
+  const rows = await db.select({ propertyId: favorites.propertyId }).from(favorites).where(eq(favorites.tenantId, tenantId));
+  return new Set(rows.map((r) => r.propertyId));
+}
+
+export async function addFavorite(tenantId: string, propertyId: string) {
+  await db.insert(favorites).values({ tenantId, propertyId }).onConflictDoNothing();
+}
+
+export async function removeFavorite(tenantId: string, propertyId: string) {
+  await db.delete(favorites).where(and(eq(favorites.tenantId, tenantId), eq(favorites.propertyId, propertyId)));
+}
 
 export async function getInquiriedPropertiesByTenant(tenantId: string) {
   const rows = await db
