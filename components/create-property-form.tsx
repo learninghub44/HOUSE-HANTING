@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImageUploader } from "@/components/image-uploader";
+import { LandlordPicker } from "@/components/landlord-picker";
 
 // All fields are kept as strings at the form-input level (even numeric
 // ones) and converted with Number(...) in onSubmit. Mixing z.coerce.number()
@@ -21,18 +23,28 @@ const schema = z.object({
   bedrooms: z.string().refine((v) => Number(v) >= 0, "Required"),
   bathrooms: z.string().refine((v) => Number(v) >= 0, "Required"),
   size: z.string().optional(),
-  image: z.string().url("Enter a valid image URL"),
   amenities: z.string().optional(),
   description: z.string().optional(),
 });
 
 type Values = z.infer<typeof schema>;
 
-export function CreatePropertyForm({ creditsRemaining, onCreated }: { creditsRemaining: number; onCreated?: () => void }) {
+export function CreatePropertyForm({
+  creditsRemaining,
+  isAgent = false,
+  onCreated,
+}: {
+  creditsRemaining: number;
+  isAgent?: boolean;
+  onCreated?: () => void;
+}) {
   const [submitting, setSubmitting] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [mainImage, setMainImage] = useState<string[]>([]);
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [landlordId, setLandlordId] = useState<string | null>(null);
 
   const {
     register,
@@ -52,7 +64,6 @@ export function CreatePropertyForm({ creditsRemaining, onCreated }: { creditsRem
       bedrooms: "1",
       bathrooms: "1",
       size: "",
-      image: "",
       amenities: "",
       description: "",
     },
@@ -87,6 +98,10 @@ export function CreatePropertyForm({ creditsRemaining, onCreated }: { creditsRem
       setError("You're out of listing credits. Buy a package below to publish more properties.");
       return;
     }
+    if (mainImage.length === 0) {
+      setError("Upload a main photo before publishing.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     setSuccess("");
@@ -103,17 +118,22 @@ export function CreatePropertyForm({ creditsRemaining, onCreated }: { creditsRem
           bedrooms: Number(values.bedrooms),
           bathrooms: Number(values.bathrooms),
           size: values.size || undefined,
-          image: values.image,
+          image: mainImage[0],
+          gallery,
           amenities: values.amenities
             ? values.amenities.split(",").map((a) => a.trim()).filter(Boolean)
             : [],
           description: values.description || undefined,
+          landlordId: isAgent ? landlordId ?? undefined : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create property");
       setSuccess("Property published.");
       reset();
+      setMainImage([]);
+      setGallery([]);
+      setLandlordId(null);
       onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -129,6 +149,12 @@ export function CreatePropertyForm({ creditsRemaining, onCreated }: { creditsRem
         <p className="text-sm font-medium text-slate-500">{creditsRemaining} credit{creditsRemaining === 1 ? "" : "s"} left</p>
       </div>
       <form onSubmit={handleSubmit(onSubmit)} className="mt-4 grid gap-3 md:grid-cols-2">
+        {isAgent && (
+          <div className="grid gap-1 md:col-span-2">
+            <LandlordPicker value={landlordId} onChange={setLandlordId} />
+            <span className="text-xs text-slate-400">Optional — leave blank to list under your own agent profile.</span>
+          </div>
+        )}
         <div className="grid gap-1">
           <Input {...register("title")} placeholder="Property title" />
           {errors.title && <span className="text-xs text-rose-600">{errors.title.message}</span>}
@@ -160,9 +186,11 @@ export function CreatePropertyForm({ creditsRemaining, onCreated }: { creditsRem
           <Input {...register("bathrooms")} type="number" min={0} placeholder="Bathrooms" />
           {errors.bathrooms && <span className="text-xs text-rose-600">{errors.bathrooms.message}</span>}
         </div>
-        <div className="grid gap-1 md:col-span-2">
-          <Input {...register("image")} placeholder="Main image URL (https://...)" />
-          {errors.image && <span className="text-xs text-rose-600">{errors.image.message}</span>}
+        <div className="grid gap-2 md:col-span-2">
+          <ImageUploader label="Upload main photo" urls={mainImage} onChange={setMainImage} />
+        </div>
+        <div className="grid gap-2 md:col-span-2">
+          <ImageUploader label="Upload gallery photos" multiple urls={gallery} onChange={setGallery} />
         </div>
         <div className="grid gap-1 md:col-span-2">
           <Input {...register("amenities")} placeholder="Amenities, comma-separated (e.g. parking, backup water, gated compound)" />

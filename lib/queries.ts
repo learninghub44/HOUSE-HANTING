@@ -105,19 +105,21 @@ export async function createProperty(data: NewProperty) {
   return property;
 }
 
-export async function createPropertyConsumingCredit(data: NewProperty) {
+export async function createPropertyConsumingCredit(data: NewProperty & { creditHolderId?: string }) {
+  const { creditHolderId, ...propertyData } = data;
+  const payerId = creditHolderId ?? data.landlordId;
   return db.transaction(async (tx) => {
-    const [profile] = await tx.select().from(profiles).where(eq(profiles.id, data.landlordId));
+    const [profile] = await tx.select().from(profiles).where(eq(profiles.id, payerId));
     if (!profile || profile.listingCredits < 1) {
       return { ok: false as const, error: "insufficient_credits" as const };
     }
 
-    const [property] = await tx.insert(properties).values(data).returning();
+    const [property] = await tx.insert(properties).values(propertyData).returning();
 
     await tx
       .update(profiles)
       .set({ listingCredits: sql`${profiles.listingCredits} - 1` })
-      .where(eq(profiles.id, data.landlordId));
+      .where(eq(profiles.id, payerId));
 
     return { ok: true as const, property };
   });
@@ -191,6 +193,20 @@ export async function createProfile(data: NewProfile) {
 
 export async function getAllProfiles() {
   return db.select().from(profiles).orderBy(desc(profiles.createdAt));
+}
+
+export async function searchLandlords(query: string) {
+  const term = `%${query.trim()}%`;
+  const result = await db.execute<{ id: string; name: string | null; phone: string | null }>(sql`
+    select pr.id, u.name, pr.phone
+    from profiles pr
+    left join neon_auth.users_sync u on u.id = pr.id
+    where pr.role = 'landlord'
+      and (u.name ilike ${term} or pr.phone ilike ${term})
+    order by u.name
+    limit 10
+  `);
+  return result.rows.map((row) => ({ id: row.id, name: row.name ?? "Unnamed landlord", phone: row.phone ?? "" }));
 }
 
 export async function getAllProfilesWithContact() {

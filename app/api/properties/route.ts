@@ -17,6 +17,7 @@ type CreatePropertyBody = {
   gallery?: string[];
   amenities?: string[];
   description?: string;
+  landlordId?: string;
 };
 
 export async function POST(request: Request) {
@@ -49,12 +50,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bedrooms and bathrooms must be non-negative numbers." }, { status: 400 });
   }
 
-  // No separate "list on behalf of a landlord" flow exists yet, so an
-  // agent's listing is attributed to the agent's own profile as both
-  // landlord and agent of record.
+  // No separate "list on behalf of a landlord" flow existed before — an
+  // agent can now search for and attribute the listing to a real landlord
+  // account. If they don't pick one, it falls back to the agent's own
+  // profile (e.g. for a landlord who isn't registered yet).
+  let landlordId = session.user.id;
+  if (profile.role === "agent" && body.landlordId) {
+    const landlordProfile = await getProfile(body.landlordId);
+    if (!landlordProfile || landlordProfile.role !== "landlord") {
+      return NextResponse.json({ error: "Selected landlord account not found." }, { status: 400 });
+    }
+    landlordId = body.landlordId;
+  }
+
   const result = await createPropertyConsumingCredit({
-    landlordId: session.user.id,
+    landlordId,
     agentId: profile.role === "agent" ? session.user.id : undefined,
+    creditHolderId: session.user.id,
     title: body.title,
     location: body.location,
     area: body.area,

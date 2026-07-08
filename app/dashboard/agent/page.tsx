@@ -80,7 +80,7 @@ export default async function AgentDashboardPage() {
 
         {isVerified ? (
           <>
-            <CreatePropertyForm creditsRemaining={profile.listingCredits} />
+            <CreatePropertyForm creditsRemaining={profile.listingCredits} isAgent />
             <BillingWidget creditsRemaining={profile.listingCredits} />
           </>
         ) : (
