@@ -1,0 +1,7 @@
+name = "house-hunting"
+compatibility_date = "2025-06-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".open-next/assets"
+
+[placement]
+mode = "smart"
