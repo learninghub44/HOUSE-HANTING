@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "./db/client";
+import { poolDb } from "./db/pool-client";
 import { favorites, inquiries, payments, profiles, properties, reports, settings } from "./db/schema";
 
 // ---------- Properties ----------
@@ -376,10 +377,18 @@ export async function createPendingPayment(data: NewPendingPayment) {
 
 /**
  * Marks a pending payment as paid and credits the buyer's listing balance,
- * in one transaction so a webhook retry can never double-credit.
+ * in one real Postgres transaction so a webhook retry (or a race between
+ * the webhook and the browser callback) can never double-credit, and a
+ * mid-flight crash can never leave a "Paid" payment with no credits granted.
+ *
+ * Uses `poolDb` (neon-serverless / WebSocket) rather than the app's default
+ * `db` (neon-http), because the http driver does not support interactive
+ * transactions with conditional logic inside them. This is the only place
+ * in the codebase that needs a real transaction, so it's the only place
+ * using the pooled client.
  */
 export async function markPaymentPaidAndGrantCredits(reference: string) {
-  return db.transaction(async (tx) => {
+  return poolDb.transaction(async (tx) => {
     const [payment] = await tx.select().from(payments).where(eq(payments.paystackReference, reference));
     if (!payment) return null;
     if (payment.status === "Paid") return payment; // already processed, idempotent no-op
